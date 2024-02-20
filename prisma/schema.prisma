@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Status {
+  CANCEL
+  NOT_CANCEL
+}
+
+model User {
+  user_id   Int       @id @default(autoincrement())
+  username  String    @unique @db.VarChar(30)
+  password  String    @db.VarChar(70)
+  email     String    @db.VarChar(50)
+  phone     String    @db.VarChar(10)
+  sex       String    @db.VarChar(10)
+  age       Int
+  user_role Role      @default(USER)
+  bookings  Booking[]
+
+  @@map("users")
+}
+
+model Hairstyle {
+  hairstyle_id    Int       @id @default(autoincrement())
+  hairstyle_name  String    @db.VarChar(50)
+  hairstyle_price Int
+  hairstyle_img   String
+  bookings        Booking[]
+
+  @@map("hairStyle")
+}
+
+model Booking {
+  booking_id  Int       @id @default(autoincrement())
+  datetime    DateTime
+  user        User      @relation(fields: [userID], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
+  userID      Int       @map("user_id")
+  hairstyle   Hairstyle @relation(fields: [hairstyleID], references: [hairstyle_id], onDelete: Cascade, onUpdate: Cascade)
+  hairstyleID Int       @map("hairstyle_id")
+  status      Status    @default(CANCEL)
+
+  @@map("bookings")
+}
