@@ -3,26 +3,26 @@ const jwt = require("jsonwebtoken");
 const db = require("../models/db");
 
 module.exports.register = async (req, res, next) => {
-  const { username, password, confirmPassword, email , phone, sex, age,} = req.body;
+  const { username, password, confirmPassword, email, phone, sex, age, } = req.body;
   console.log(req.body);
   try {
-    if (!(username && password && confirmPassword)) {
+    if (!(username && password)) {
       return next(new Error("Fullfill all inputs"));
     }
-    if (confirmPassword !== password) {
-      throw new Error("confirm password not match");
-    }
+    // if (confirmPassword !== password) {
+    //   throw new Error("confirm password not match");
+    // }
     const hashedPassword = await bcrypt.hash(password, 8);
     console.log(hashedPassword);
     const data = {
       username,
-      password:  hashedPassword,
+      password: hashedPassword,
       email,
       phone,
       sex,
-      age,
+      age: Number(age)
     };
-    const rs = await db.user.create({ data : data });
+    const rs = await db.user.create({ data: data });
     console.log(rs);
 
     res.json({ msg: "Register successful" });
@@ -39,7 +39,7 @@ module.exports.login = async (req, res, next) => {
     }
 
     const user = await db.user.findFirstOrThrow({ where: { username } });
-    
+
     const pwOk = await bcrypt.compare(password, user.password)
     // console.log(user.password)
     if (!pwOk) {
@@ -51,7 +51,7 @@ module.exports.login = async (req, res, next) => {
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: "30d",
     });
-    console.log(token); 
+    console.log(token);
     res.json({ token: token });
   } catch (err) {
     next(err);
