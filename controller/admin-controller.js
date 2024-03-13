@@ -9,12 +9,13 @@ exports.getUsers = async (req, res, next) => {
   }
 };
 
-exports.getBookings = async (req, res, next) => {
+exports.getBookings = async (req, res, next) => {  
   try {
     const bookings = await db.booking.findMany({
       include: {
         user: true,
-        hairstyle: true
+        hairstyle: true,
+        guest: true
       }
     });
     res.json({ bookings });
@@ -43,7 +44,13 @@ exports.getUserBooking = async (req, res, next) => {
 
 exports.getStatusUser = async (req, res, next) => {
   try {
-    const StatusUser = await db.statususer.findMany();
+    const StatusUser = await db.booking.findMany({
+      include: {
+        guest: true,
+        hairstyle: true,
+        user: true,
+      }
+    });
     res.json({ StatusUser });
   } catch (err) {
     next(err);
@@ -82,7 +89,7 @@ exports.deleteHairstyle = async (req, res, next) => {
 
 exports.createHairStyle = async (req, res, next) => {
   try {
-    const { hairstyle_name, hairstyle_price, hairstyle_img, hairstyle, } = req.body;
+    const { hairstyle_name, hairstyle_price, hairstyle_img, } = req.body;
     console.log(req.body)
 
     const HairStyle = await db.hairstyle.create({
@@ -151,7 +158,7 @@ exports.updateHairstyle = async (req, res, next) => {
 }
 
 exports.createUserbooking = async (req, res, next) => {
-  const { datatime, hairstyle_id } = req.body;
+  const { datatime, hairstyle_id, guest_id } = req.body;
   // const user_id  req.user.user_id
   try {
     const dateTime = new Date(datatime)
@@ -168,6 +175,11 @@ exports.createUserbooking = async (req, res, next) => {
                       user_id: req.user.user_id
                   }
               },
+              guest: {
+                connect: {
+                  guest_id: +guest_id,
+                }
+              }
             
           }
       })
@@ -175,5 +187,22 @@ exports.createUserbooking = async (req, res, next) => {
   }catch(err){
       next(err)
       console.log(err)
+  }
+}
+
+exports.createguest = async (req, res, next) => {
+  const { nickname, age_range } = req.body;
+  console.log(req.body)
+  try {
+    const createGuest = await db.guest.create({
+      data: {
+        nickname,
+        age_range,
+      }
+    })
+    res.json({ createGuest })
+  }catch(err){
+    next(err)
+    console.log(err)
   }
 }
