@@ -4,8 +4,8 @@ const prisma = new PrismaClient()
 
 const password = bcrypt.hashSync('123456789')
 const userData = [
-    {username : 'Dodo', password: password,  email :'thidsadee2000@gmail.com', phone: '0829913450', sex: 'man', age: '20', user_role: 'USER'},
-    {username : 'do', password: password,  email : 'sureelux2545@gmail.com', phone : '098888888', sex: 'women', age: '19', user_role: 'ADMIN'}
+    {username : 'Dodo', password: password,  email :'thidsadee2000@gmail.com', phone: '0829913450', sex: 'man', age: 20, user_role: 'USER'},
+    {username : 'do', password: password,  email : 'sureelux2545@gmail.com', phone : '098888888', sex: 'women', age: 19, user_role: 'ADMIN'}
 ]
 
 // const todoData = [

@@ -9,7 +9,7 @@ exports.getUsers = async (req, res, next) => {
   }
 };
 
-exports.getBookings = async (req, res, next) => {  
+exports.getBookings = async (req, res, next) => {
   try {
     const bookings = await db.booking.findMany({
       include: {
@@ -18,6 +18,7 @@ exports.getBookings = async (req, res, next) => {
         guest: true
       }
     });
+    // console.log(bookings)
     res.json({ bookings });
   } catch (err) {
     next(err);
@@ -157,36 +158,91 @@ exports.updateHairstyle = async (req, res, next) => {
   }
 }
 
+exports.getUserBooking = async (req, res, next) => {
+  try {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const bookings = await db.booking.findMany({
+      where: {
+        datetime: {
+          gte: startOfDay.toISOString(),
+          lt: endOfDay.toISOString(),
+        },
+      },
+    });
+
+    res.json({ bookings });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.createUserbooking = async (req, res, next) => {
-  const { datatime, hairstyle_id, guest_id } = req.body;
+  const { datetime, hairstyle_id, guest_id } = req.body;
+  console.log(datetime)
+
+  function convertToISO(time24) {
+    // แยกส่วนชั่วโมงและนาทีออกจากกัน
+    const [hours, minutes] = time24.split(':');
+
+    // สร้างวันที่ปัจจุบัน
+    const now = new Date();
+    now.setHours(hours);
+    now.setMinutes(minutes);
+    now.setSeconds(0);
+    now.setMilliseconds(0);
+
+    // แปลงเป็นรูปแบบ ISO 8601
+    return now.toISOString();
+  }
+
+  const date = convertToISO(datetime)
   // const user_id  req.user.user_id
   try {
-    const dateTime = new Date(datatime)
-      const booking = await db.booking.create({
-          data: {
-              datetime: dateTime,
-              hairstyle: {
-                  connect: {
-                    hairstyle_id: +hairstyle_id,
-                  }
-              },
-              user: {
-                  connect: {
-                      user_id: req.user.user_id
-                  }
-              },
-              guest: {
-                connect: {
-                  guest_id: +guest_id,
-                }
-              }
-            
+
+    const checkuser = await db.booking.findFirst({
+      where: {
+        AND: {
+          userID: req.user.user_id,
+          status: "NOT_CANCEL"
+        }
+      }
+    })
+
+    console.log(checkuser)
+
+    if (checkuser) {
+      return res.status(400).json({ message: "ไม่สามารถจองได้" })
+    }
+
+    const booking = await db.booking.create({
+      data: {
+        datetime: date,
+        hairstyle: {
+          connect: {
+            hairstyle_id: +hairstyle_id,
           }
-      })
-      res.json({ booking })
-  }catch(err){
-      next(err)
-      console.log(err)
+        },
+        user: {
+          connect: {
+            user_id: req.user.user_id
+          }
+        },
+        guest: {
+          connect: {
+            guest_id: +guest_id,
+          }
+        }
+
+      }
+    })
+    res.json({ booking })
+  } catch (err) {
+    next(err)
+    console.log(err)
   }
 }
 
@@ -201,8 +257,9 @@ exports.createguest = async (req, res, next) => {
       }
     })
     res.json({ createGuest })
-  }catch(err){
+  } catch (err) {
     next(err)
     console.log(err)
   }
 }
+

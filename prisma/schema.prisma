@@ -27,7 +27,7 @@ model User {
   email     String    @db.VarChar(50)
   phone     String    @db.VarChar(10)
   sex       String    @db.VarChar(10)
-  age       Int
+  age       String
   user_role Role      @default(USER)
   bookings  Booking[]
 
@@ -46,7 +46,7 @@ model Hairstyle {
 
 model Booking {
   booking_id  Int       @id @default(autoincrement())
-  datetime    DateTime  @db.Date
+  datetime    DateTime 
   user        User      @relation(fields: [userID], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
   userID      Int       @map("user_id")
   hairstyle   Hairstyle @relation(fields: [hairstyleID], references: [hairstyle_id], onDelete: Cascade, onUpdate: Cascade)
@@ -66,3 +66,4 @@ model Guest {
   age_range String
   Booking   Booking[]
 }
+
