@@ -16,10 +16,67 @@ exports.getBookings = async (req, res, next) => {
         user: true,
         hairstyle: true,
         guest: true
+      },
+      where: {
+        status: 0
       }
     });
     // console.log(bookings)
     res.json({ bookings });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.checkDateBooking = async (req, res, next) => {
+  try{
+    const { checkDate } = req.query
+
+    const startOfDay = new Date(checkDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(checkDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const check = await db.booking.findMany({
+      where: {
+        datetime: {
+          gte: startOfDay.toISOString(),
+          lt: endOfDay.toISOString(),
+        },
+        status: 0
+      },
+    });
+
+    res.json({ check })
+  }catch(err){
+    next(err)
+    console.log(err)
+  }
+}
+
+exports.getHairStyleByid = async ( req, res, next ) => {
+  try {
+    const {id} = req.params
+    const gethairid = await db.hairstyle.findFirst ({
+      where:{
+        hairstyle_id: Number(id)
+      }
+    })
+    res.json({gethairid})
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getHairStatusByid = async ( req, res, next ) => {
+  try {
+    const {id1} = req.params
+    const getstatusimgid = await db.hairstyle.findFirst ({
+      where:{
+        hairstyle_id: Number(id1)
+      }
+    })
+    res.json({getstatusimgid})
   } catch (err) {
     next(err);
   }
@@ -34,14 +91,14 @@ exports.getHairStyle = async (req, res, next) => {
   }
 };
 
-exports.getUserBooking = async (req, res, next) => {
-  try {
-    const UserBooking = await db.hairstyle.findMany();
-    res.json({ UserBooking });
-  } catch (err) {
-    next(err);
-  }
-};
+// exports.getUserBooking = async (req, res, next) => {
+//   try {
+//     const UserBooking = await db.hairstyle.findMany();
+//     res.json({ UserBooking });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
 
 exports.getStatusUser = async (req, res, next) => {
   try {
@@ -181,15 +238,15 @@ exports.getUserBooking = async (req, res, next) => {
 };
 
 exports.createUserbooking = async (req, res, next) => {
-  const { datetime, hairstyle_id, guest_id } = req.body;
+  const { datetime, hairstyle_id, guest_id, checkDate } = req.body;
   console.log(datetime)
 
-  function convertToISO(time24) {
+  function convertToISO(time24, date) {
     // แยกส่วนชั่วโมงและนาทีออกจากกัน
     const [hours, minutes] = time24.split(':');
 
     // สร้างวันที่ปัจจุบัน
-    const now = new Date();
+    const now = new Date(date);
     now.setHours(hours);
     now.setMinutes(minutes);
     now.setSeconds(0);
@@ -199,15 +256,15 @@ exports.createUserbooking = async (req, res, next) => {
     return now.toISOString();
   }
 
-  const date = convertToISO(datetime)
-  // const user_id  req.user.user_id
+  const date = convertToISO(datetime, checkDate)
+
   try {
 
     const checkuser = await db.booking.findFirst({
       where: {
         AND: {
           userID: req.user.user_id,
-          status: "NOT_CANCEL"
+          status: 0
         }
       }
     })
@@ -262,4 +319,99 @@ exports.createguest = async (req, res, next) => {
     console.log(err)
   }
 }
+
+exports.allBooking = async (req, res, next) => {
+  try{
+    const allBook = await db.booking.findMany({
+      where: {
+        status: {
+          not: 0
+        }
+      },
+      include: {
+        user: true,
+        hairstyle: true,
+        guest: true
+      }
+    })
+    res.json({ allBook, status: 200, result: "success!" })
+  }catch(err){
+    next(err)
+    console.log(err)
+  }
+}
+
+exports.SearchHistory = async (req, res, next) => {
+  try {
+    const { search } = req.query
+
+    const Searchoder = await db.booking.findMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              {
+                hairstyle: {
+                  hairstyle_name: {
+                    contains: search
+                  }
+                }
+              },
+              {
+                user: {
+                  OR: [
+                    {
+                      username: {
+                        contains: search
+                      }
+                    },
+                    {
+                      phone: {
+                        contains: search
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      include: {
+        hairstyle: true,
+        user: true,
+        guest: true
+      }
+    })
+
+    if(Searchoder.length === 0){
+      return res.status(400).json({ message: "ไม่พบข้อมูลที่ค้นหา", status: 400, result: "Error" })
+    }
+
+    res.json({ Searchoder, status: 200, result: "success!" })
+  } catch (err) {
+    next(err)
+    console.log(err)
+  }
+};
+
+exports.updateStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.query;
+    const update = await db.booking.update({
+      where: {
+        booking_id: Number(id)
+      },
+      data: {
+        status: Number(status)
+      }
+    })
+    res.json({ update, status: 200, result: "success!" })
+  }catch(err){
+    next(err)
+    console.log(err)
+  }
+};
+
 

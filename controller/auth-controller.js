@@ -4,30 +4,34 @@ const db = require("../models/db");
 
 module.exports.register = async (req, res, next) => {
   const { username, password, confirmPassword, email, phone, sex, age, } = req.body;
-  console.log(req.body);
+  // console.log(req.body);
   try {
     if (!(username && password)) {
       return next(new Error("Fullfill all inputs"));
     }
-    // if (confirmPassword !== password) {
-    //   throw new Error("confirm password not match");
-    // }
+    if (confirmPassword !== password) {
+      throw new Error("confirm password not match");
+    }
     const hashedPassword = await bcrypt.hash(password, 8);
-    console.log(hashedPassword);
+
     const data = {
       username,
       password: hashedPassword,
       email,
       phone,
       sex,
-      age: Number(age)
+      age: age
     };
+
+    console.log(data)
+
     const rs = await db.user.create({ data: data });
     console.log(rs);
 
     res.json({ msg: "Register successful" });
   } catch (err) {
     next(err);
+    console.log(err)
   }
 };
 

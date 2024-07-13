@@ -15,11 +15,6 @@ enum Role {
   ADMIN
 }
 
-enum Status {
-  CANCEL     @map("CANCEL")
-  NOT_CANCEL @map("NOT_CANCEL")
-}
-
 model User {
   user_id   Int       @id @default(autoincrement())
   username  String    @unique @db.VarChar(30)
@@ -46,14 +41,14 @@ model Hairstyle {
 
 model Booking {
   booking_id  Int       @id @default(autoincrement())
-  datetime    DateTime 
+  datetime    DateTime
   user        User      @relation(fields: [userID], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
   userID      Int       @map("user_id")
   hairstyle   Hairstyle @relation(fields: [hairstyleID], references: [hairstyle_id], onDelete: Cascade, onUpdate: Cascade)
   hairstyleID Int       @map("hairstyle_id")
   guest       Guest     @relation(fields: [guestID], references: [guest_id], onDelete: Cascade, onUpdate: Cascade)
   guestID     Int       @map("guest_id")
-  status      Status    @default(NOT_CANCEL)
+  status      Int       @default(0)
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
 
@@ -66,4 +61,3 @@ model Guest {
   age_range String
   Booking   Booking[]
 }
-
