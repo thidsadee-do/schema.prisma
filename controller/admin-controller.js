@@ -68,19 +68,19 @@ exports.getHairStyleByid = async ( req, res, next ) => {
   }
 };
 
-exports.getHairStatusByid = async ( req, res, next ) => {
-  try {
-    const {id1} = req.params
-    const getstatusimgid = await db.hairstyle.findFirst ({
-      where:{
-        hairstyle_id: Number(id1)
-      }
-    })
-    res.json({getstatusimgid})
-  } catch (err) {
-    next(err);
-  }
-};
+  exports.getHairStatusByid = async ( req, res, next ) => {
+    try {
+      const {id1} = req.params
+      const getstatusimgid = await db.hairstyle.findFirst ({
+        where:{
+          hairstyle_id: Number(id1)
+        }
+      })
+      res.json({getstatusimgid})
+    } catch (err) {
+      next(err);
+    }
+  };
 
 exports.getHairStyle = async (req, res, next) => {
   try {
@@ -242,24 +242,18 @@ exports.createUserbooking = async (req, res, next) => {
   console.log(datetime)
 
   function convertToISO(time24, date) {
-    // แยกส่วนชั่วโมงและนาทีออกจากกัน
-    const [hours, minutes] = time24.split(':');
 
-    // สร้างวันที่ปัจจุบัน
+    const [hours, minutes] = time24.split(':');
     const now = new Date(date);
     now.setHours(hours);
     now.setMinutes(minutes);
     now.setSeconds(0);
     now.setMilliseconds(0);
 
-    // แปลงเป็นรูปแบบ ISO 8601
     return now.toISOString();
   }
-
   const date = convertToISO(datetime, checkDate)
-
   try {
-
     const checkuser = await db.booking.findFirst({
       where: {
         AND: {
@@ -268,9 +262,6 @@ exports.createUserbooking = async (req, res, next) => {
         }
       }
     })
-
-    console.log(checkuser)
-
     if (checkuser) {
       return res.status(400).json({ message: "ไม่สามารถจองได้" })
     }
@@ -293,13 +284,11 @@ exports.createUserbooking = async (req, res, next) => {
             guest_id: +guest_id,
           }
         }
-
       }
     })
     res.json({ booking })
   } catch (err) {
     next(err)
-    console.log(err)
   }
 }
 
@@ -344,7 +333,6 @@ exports.allBooking = async (req, res, next) => {
 exports.SearchHistory = async (req, res, next) => {
   try {
     const { search } = req.query
-
     const Searchoder = await db.booking.findMany({
       where: {
         AND: [
