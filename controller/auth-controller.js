@@ -2,17 +2,24 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("../models/db");
 
+
+
+
+
 module.exports.register = async (req, res, next) => {
-  const { username, password, confirmPassword, email, phone, sex, age, } = req.body;
-  // console.log(req.body);
+  const { username, password, confirmPassword, email, phone, sex, age } = req.body;
+
   try {
-    if (!(username && password)) {
-      return next(new Error("Fullfill all inputs"));
+    // ตรวจสอบว่ามีการกรอกฟิลด์ข้อมูลที่จำเป็นครบถ้วนและไม่ว่างเปล่า
+    if (!username || !password || !confirmPassword || !email || !phone || !sex || !age) {
+      return next(new Error("กรุณากรอกข้อมูลให้ครบทุกช่อง"));
     }
+
     if (confirmPassword !== password) {
-      throw new Error("confirm password not match");
+      return next(new Error("รหัสผ่านไม่ตรงกัน"));
     }
-    const hashedPassword = await bcrypt.hash(password, 8);
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const data = {
       username,
@@ -20,20 +27,17 @@ module.exports.register = async (req, res, next) => {
       email,
       phone,
       sex,
-      age: age
+      age
     };
 
-    console.log(data)
-
     const rs = await db.user.create({ data: data });
-    console.log(rs);
-
-    res.json({ msg: "Register successful" });
+    res.json({ msg: "ลงทะเบียนสำเร็จ" });
   } catch (err) {
-    next(err);
-    console.log(err)
+    console.log(err);
+    return next(err);
   }
 };
+
 
 module.exports.login = async (req, res, next) => {
   const { username, password } = req.body;
@@ -50,6 +54,7 @@ module.exports.login = async (req, res, next) => {
     if (!pwOk) {
       throw new Error("invalid login");
     }
+    
 
     const payload = { id: user.user_id };
     // console.log(user.user_id);
@@ -62,6 +67,8 @@ module.exports.login = async (req, res, next) => {
     next(err);
   }
 };
+
+
 
 exports.getme = (req, res, next) => {
   res.json(req.user);

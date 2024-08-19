@@ -1,4 +1,6 @@
 const db = require('../models/db');
+const axios = require('axios')
+const cloudUpload = require("../utils/cloudpload");
 
 exports.getUsers = async (req, res, next) => {
   try {
@@ -19,7 +21,10 @@ exports.getBookings = async (req, res, next) => {
       },
       where: {
         status: 0
-      }
+      },
+      // orderBy: {
+      //   datetime: 'asc'
+      // },
     });
     // console.log(bookings)
     res.json({ bookings });
@@ -29,7 +34,7 @@ exports.getBookings = async (req, res, next) => {
 };
 
 exports.checkDateBooking = async (req, res, next) => {
-  try{
+  try {
     const { checkDate } = req.query
 
     const startOfDay = new Date(checkDate);
@@ -48,39 +53,39 @@ exports.checkDateBooking = async (req, res, next) => {
     });
 
     res.json({ check })
-  }catch(err){
+  } catch (err) {
     next(err)
     console.log(err)
   }
 }
 
-exports.getHairStyleByid = async ( req, res, next ) => {
+exports.getHairStyleByid = async (req, res, next) => {
   try {
-    const {id} = req.params
-    const gethairid = await db.hairstyle.findFirst ({
-      where:{
+    const { id } = req.params
+    const gethairid = await db.hairstyle.findFirst({
+      where: {
         hairstyle_id: Number(id)
       }
     })
-    res.json({gethairid})
+    res.json({ gethairid })
   } catch (err) {
     next(err);
   }
 };
 
-  exports.getHairStatusByid = async ( req, res, next ) => {
-    try {
-      const {id1} = req.params
-      const getstatusimgid = await db.hairstyle.findFirst ({
-        where:{
-          hairstyle_id: Number(id1)
-        }
-      })
-      res.json({getstatusimgid})
-    } catch (err) {
-      next(err);
-    }
-  };
+exports.getHairStatusByid = async (req, res, next) => {
+  try {
+    const { id1 } = req.params
+    const getstatusimgid = await db.hairstyle.findFirst({
+      where: {
+        hairstyle_id: Number(id1)
+      }
+    })
+    res.json({ getstatusimgid })
+  } catch (err) {
+    next(err);
+  }
+};
 
 exports.getHairStyle = async (req, res, next) => {
   try {
@@ -107,7 +112,7 @@ exports.getStatusUser = async (req, res, next) => {
         guest: true,
         hairstyle: true,
         user: true,
-      }
+      },
     });
     res.json({ StatusUser });
   } catch (err) {
@@ -145,15 +150,24 @@ exports.deleteHairstyle = async (req, res, next) => {
   }
 };
 
-exports.createHairStyle = async (req, res, next) => {
+exports.  createHairStyle = async (req, res, next) => {
   try {
-    const { hairstyle_name, hairstyle_price, hairstyle_img, } = req.body;
+    const { hairstyle_name, hairstyle_price } = req.body;
+
+    console.log(req.files)
+
+    const imagePromise = req.files.map((file) => {
+      return cloudUpload(file.path);
+    });
+
+    const imageUrlArray = await Promise.all(imagePromise);
+
     console.log(req.body)
 
     const HairStyle = await db.hairstyle.create({
       data: {
         hairstyle_name,
-        hairstyle_img,
+        hairstyle_img: imageUrlArray[0],
         hairstyle_price: Number(hairstyle_price),
       }
     });
@@ -168,8 +182,14 @@ exports.createHairStyle = async (req, res, next) => {
 exports.updateHairStyle = async (req, res, next) => {
   try {
     const { hairstyle_id } = req.params
-    const { hairstyle_name, hairstyle_price, hairstyle_img, } = req.body;
+    const { hairstyle_name, hairstyle_price } = req.body;
     console.log(req.body)
+    
+    const imagePromise = req.files.map((file) => {
+      return cloudUpload(file.path);
+    });
+
+    const imageUrlArray = await Promise.all(imagePromise);
 
     const HairStyle = await db.hairstyle.update({
       where: {
@@ -177,7 +197,7 @@ exports.updateHairStyle = async (req, res, next) => {
       },
       data: {
         hairstyle_name,
-        hairstyle_img,
+        hairstyle_img: imageUrlArray,
         hairstyle_price: Number(hairstyle_price),
       }
     });
@@ -229,6 +249,7 @@ exports.getUserBooking = async (req, res, next) => {
           lt: endOfDay.toISOString(),
         },
       },
+      
     });
 
     res.json({ bookings });
@@ -261,6 +282,7 @@ exports.createUserbooking = async (req, res, next) => {
           status: 0
         }
       }
+      
     })
     if (checkuser) {
       return res.status(400).json({ message: "ไม่สามารถจองได้" })
@@ -284,8 +306,20 @@ exports.createUserbooking = async (req, res, next) => {
             guest_id: +guest_id,
           }
         }
-      }
+      },
     })
+
+    const params = new URLSearchParams({
+      message: `มีการจองคิว ${booking.booking_id} \nสถานะ${booking.status === 0 ? "รอยืนยัน" : booking.status === 1 ? "ยืนยันแล้ว" : "ยกเลิก"}`
+    })
+
+    const token = process.env.TokonLine
+    const response = await axios.post('https://notify-api.line.me/api/notify', params.toString(), {
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+    });
+
     res.json({ booking })
   } catch (err) {
     next(err)
@@ -300,7 +334,7 @@ exports.createguest = async (req, res, next) => {
       data: {
         nickname,
         age_range,
-      }
+      },
     })
     res.json({ createGuest })
   } catch (err) {
@@ -310,7 +344,7 @@ exports.createguest = async (req, res, next) => {
 }
 
 exports.allBooking = async (req, res, next) => {
-  try{
+  try {
     const allBook = await db.booking.findMany({
       where: {
         status: {
@@ -321,10 +355,15 @@ exports.allBooking = async (req, res, next) => {
         user: true,
         hairstyle: true,
         guest: true
-      }
+      },
+      orderBy: {
+        booking_id: 'desc'
+      },
+      
+      
     })
     res.json({ allBook, status: 200, result: "success!" })
-  }catch(err){
+  } catch (err) {
     next(err)
     console.log(err)
   }
@@ -372,7 +411,7 @@ exports.SearchHistory = async (req, res, next) => {
       }
     })
 
-    if(Searchoder.length === 0){
+    if (Searchoder.length === 0) {
       return res.status(400).json({ message: "ไม่พบข้อมูลที่ค้นหา", status: 400, result: "Error" })
     }
 
@@ -391,12 +430,27 @@ exports.updateStatus = async (req, res, next) => {
       where: {
         booking_id: Number(id)
       },
+      
       data: {
         status: Number(status)
-      }
+      },
+      
     })
+    
+
+    const params = new URLSearchParams({
+      message: `สถานะการจอง ${update.booking_id} \nสถานะถูก\n${update.status === 0 ? "รอยืนยัน" : update.status === 1 ? "ยืนยันแล้ว" : "ยกเลิก"}`
+    })
+    const token = process.env.TokonLine
+    const response = await axios.post('https://notify-api.line.me/api/notify', params.toString(), {
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+      
+    });
+
     res.json({ update, status: 200, result: "success!" })
-  }catch(err){
+  } catch (err) {
     next(err)
     console.log(err)
   }
